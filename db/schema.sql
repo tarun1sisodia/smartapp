@@ -134,7 +134,7 @@ INSERT IGNORE INTO admins (
     'admin-001',
     'admin',
     'admin@smartattendance.com',
-    '$2a$10$YourHashedPasswordHere',  -- Will provide actual hash in deployment instructions
+    '$2a$10$rQAUtbuDV9GQzixXXIdkJeORauJq2OeJqW690v2K3xAUqxAx9KAsO',
     'super_admin',
     'System Administrator'
 ); 
