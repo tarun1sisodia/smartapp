@@ -314,6 +314,60 @@ func (c *AuthController) StudentLogin(ctx *gin.Context) {
 	})
 }
 
+func (c *AuthController) AdminLogin(ctx *gin.Context) {
+	var req LoginRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var admin struct {
+		ID           string
+		PasswordHash string
+		Username     string
+		Role         string
+		FullName     string
+	}
+
+	err := c.db.QueryRow(`
+		SELECT id, password_hash, username, role, full_name
+		FROM admins
+		WHERE email = ?`,
+		req.Email,
+	).Scan(&admin.ID, &admin.PasswordHash, &admin.Username, &admin.Role, &admin.FullName)
+
+	if err == sql.ErrNoRows {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
+	} else if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch admin"})
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(req.Password)); err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
+	}
+
+	// Generate JWT token
+	token, err := c.jwtService.GenerateToken(admin.ID, admin.Role)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Login successful",
+		"token":   token,
+		"user": gin.H{
+			"id":       admin.ID,
+			"username": admin.Username,
+			"role":     admin.Role,
+			"fullName": admin.FullName,
+		},
+	})
+}
+
 func (c *AuthController) Logout(ctx *gin.Context) {
 	// Since we're using JWT tokens, we don't need to do anything server-side
 	// The client should remove the token from storage

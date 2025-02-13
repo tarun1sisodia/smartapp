@@ -19,6 +19,11 @@ func SetupRoutes(router *gin.Engine, db *sql.DB) {
 	// Initialize controllers
 	authController := controllers.NewAuthController(db, jwtService, otpService, emailService)
 
+	// Health check endpoint
+	router.GET("/api/v1/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "healthy"})
+	})
+
 	// Public routes
 	auth := router.Group("/api/v1/auth")
 	{
@@ -27,6 +32,7 @@ func SetupRoutes(router *gin.Engine, db *sql.DB) {
 		auth.POST("/verify-otp", authController.VerifyOTP)
 		auth.POST("/login/teacher", authController.TeacherLogin)
 		auth.POST("/login/student", authController.StudentLogin)
+		auth.POST("/login/admin", authController.AdminLogin)
 	}
 
 	// Protected routes
