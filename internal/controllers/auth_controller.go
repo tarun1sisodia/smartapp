@@ -2,11 +2,13 @@ package controllers
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 
 	"smart_attendance_server/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -79,6 +81,9 @@ func (c *AuthController) RegisterTeacher(ctx *gin.Context) {
 		return
 	}
 
+	// Generate teacher ID using uuid
+	teacherID := uuid.New().String()
+
 	// Start transaction
 	tx, err := c.db.Begin()
 	if err != nil {
@@ -87,22 +92,20 @@ func (c *AuthController) RegisterTeacher(ctx *gin.Context) {
 	}
 	defer tx.Rollback()
 
-	// Insert user
-	var userID string
-	err = tx.QueryRow(`
-		INSERT INTO users (role, full_name, username, email, phone, highest_degree, experience, password_hash, verified)
-		VALUES ('teacher', ?, ?, ?, ?, ?, ?, ?, FALSE)
-		RETURNING id`,
-		req.FullName, req.Username, req.Email, req.Phone, req.HighestDegree, req.Experience, hashedPassword,
-	).Scan(&userID)
-
+	// Insert user with generated teacherID (MySQL does not support RETURNING clause)
+	_, err = tx.Exec(`
+		INSERT INTO users (id, role, full_name, username, email, phone, highest_degree, experience, password_hash, verified)
+		VALUES (?, 'teacher', ?, ?, ?, ?, ?, ?, ?, FALSE)
+	`, teacherID, req.FullName, req.Username, req.Email, req.Phone, req.HighestDegree, req.Experience, hashedPassword)
 	if err != nil {
+		// Log the error for debugging purposes
+		fmt.Printf("Error inserting teacher: %v\n", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
 	}
 
 	// Generate OTP
-	otp, err := c.otpService.GenerateOTP(userID)
+	otp, err := c.otpService.GenerateOTP(teacherID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate OTP"})
 		return
@@ -115,19 +118,16 @@ func (c *AuthController) RegisterTeacher(ctx *gin.Context) {
 
 	// Send OTP via email
 	if err := c.emailService.SendOTP(req.Email, req.FullName, otp); err != nil {
-		// Log the error but don't return it to the client
-		// The user can request a new OTP if they don't receive it
-		// TODO: Implement proper logging
 		ctx.JSON(http.StatusCreated, gin.H{
 			"message": "Teacher registration successful. Please check your email for OTP.",
-			"user_id": userID,
+			"user_id": teacherID,
 		})
 		return
 	}
 
 	ctx.JSON(http.StatusCreated, gin.H{
 		"message": "Teacher registration successful. Please check your email for OTP.",
-		"user_id": userID,
+		"user_id": teacherID,
 	})
 }
 
