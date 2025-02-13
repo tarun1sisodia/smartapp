@@ -46,9 +46,9 @@ Environment=JWT_SECRET=${JWT_SECRET}
 Environment=JWT_EXPIRATION=24h
 Environment=SMTP_HOST=smtp.gmail.com
 Environment=SMTP_PORT=587
-Environment=SMTP_USERNAME=your-email@gmail.com
-Environment=SMTP_PASSWORD=your-app-specific-password
-Environment=FROM_EMAIL=your-email@gmail.com
+Environment=SMTP_USERNAME=theunusualcharon@gmail.com
+Environment=SMTP_PASSWORD=#include<coco>
+Environment=FROM_EMAIL=theunusualcharon@gmail.com
 
 [Install]
 WantedBy=multi-user.target
