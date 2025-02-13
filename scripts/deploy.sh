@@ -16,12 +16,12 @@ JWT_SECRET="Yw6Pn3PkxZfFvM+vxsxKzH8jQ9xJGJj2fqwHDuYz9AM="
 
 # Create database and tables
 echo "Setting up database..."
-mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" < ../db/schema.sql
+mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" < ./db/schema.sql
 
 # Build the application
 echo "Building application..."
-cd ..
-go build -o bin/server cmd/server/main.go
+mkdir -p bin
+go build -o bin/server ./cmd/server/main.go
 
 # Set up systemd service
 echo "Setting up systemd service..."
