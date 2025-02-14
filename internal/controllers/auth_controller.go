@@ -67,6 +67,10 @@ type OTPVerificationRequest struct {
 	OTP    string `json:"otp" binding:"required,len=6"`
 }
 
+type ResendOTPRequest struct {
+	UserID string `json:"user_id" binding:"required"`
+}
+
 func (c *AuthController) RegisterTeacher(ctx *gin.Context) {
 	var req RegisterTeacherRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -373,5 +377,57 @@ func (c *AuthController) Logout(ctx *gin.Context) {
 	// The client should remove the token from storage
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Logged out successfully",
+	})
+}
+
+func (c *AuthController) ResendOTP(ctx *gin.Context) {
+	var req ResendOTPRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get user's email and phone from database
+	var user struct {
+		Email    string
+		Phone    string
+		FullName string
+	}
+
+	err := c.db.QueryRow(`
+		SELECT email, phone, full_name
+		FROM users
+		WHERE id = ?`,
+		req.UserID,
+	).Scan(&user.Email, &user.Phone, &user.FullName)
+
+	if err == sql.ErrNoRows {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	} else if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user"})
+		return
+	}
+
+	// Generate new OTP
+	otp, err := c.otpService.GenerateOTP(req.UserID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate OTP"})
+		return
+	}
+
+	// Send OTP via email if email exists
+	if user.Email != "" {
+		if err := c.emailService.SendOTP(user.Email, user.FullName, otp); err != nil {
+			// Log the error but don't return, as we might still be able to send via SMS
+			fmt.Printf("Failed to send OTP via email: %v\n", err)
+		}
+	}
+
+	// Return success response with phone number for SMS service
+	ctx.JSON(http.StatusCreated, gin.H{
+		"message": "OTP has been resent",
+		"phone":   user.Phone,
+		"otp":     otp,
 	})
 }

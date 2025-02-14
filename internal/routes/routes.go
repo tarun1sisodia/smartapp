@@ -30,6 +30,7 @@ func SetupRoutes(router *gin.Engine, db *sql.DB) {
 		auth.POST("/register/teacher", authController.RegisterTeacher)
 		auth.POST("/register/student", authController.RegisterStudent)
 		auth.POST("/verify-otp", authController.VerifyOTP)
+		auth.POST("/resend-otp", authController.ResendOTP)
 		auth.POST("/login/teacher", authController.TeacherLogin)
 		auth.POST("/login/student", authController.StudentLogin)
 		auth.POST("/login/admin", authController.AdminLogin)
