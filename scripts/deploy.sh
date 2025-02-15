@@ -78,9 +78,9 @@ ALLOWED_ORIGINS=*
 # SMTP Configuration
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USERNAME=theunusualcharon@gmail.com
-SMTP_PASSWORD=#include<coco>
-FROM_EMAIL=theunusualcharon@gmail.com
+SMTP_USERNAME=example@gmail.com
+SMTP_PASSWORD=password  
+FROM_EMAIL=example@gmail.com
 EOF
 
 # Set proper permissions for .env file
